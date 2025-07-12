@@ -9,6 +9,18 @@ This repo contains a study about the bufferbloat phenomenon done for the Masters
 
 ## How to run
 
-1. `vagrant up` to boot up the VM we'll be working with.
-2. `vagrant ssh`
+- From the root of this repo run `git clone https://github.com/skywardpixel/mininet-vagrant`.
+- `cd mininet-vagrant && vagrant up` to boot up and setup the VM we'll be working with.
+- `vagrant plugin install vagrant-scp` to install scp
+
+Now we need to copy the script files to the VM and run it:
+
+- `vagrant scp ../bufferbloat :/home/vagrant/bufferbloat`
+- `vagrant ssh` to attach to the VM
+
+Once attached we need to setup the VM system dependencies:
+
+- `$sudo apt install wireshark -y`
+- `$nohup sudo wireshark > wireshark.log &` to start wireshark in the background
+- `$cd bufferbloat`
 
