@@ -24,5 +24,21 @@ Once attached we need to setup the VM system dependencies:
 - `$nohup sudo wireshark > wireshark.log &` to start wireshark in the background.
 - `$sudo apt install python3-pip -y && sudo python3 -m pip install mininet matplotlib` to install python3 and it's dependencies in the VM. 
 
-- `$cd bufferbloat`
+Running the experiments
 
+- `$cd bufferbloat && sudo bash run.sh`
+
+Logout from the ssh connection and copy the logged files to host machine
+
+- `vagrant scp ../bufferbloat :/home/vagrant/bufferbloat`
+
+TCP Reno experiments
+
+```bash
+vagrant scp :~/bufferbloat/bb-q20 ./bb-q20
+vagrant scp :~/bufferbloat/bb-q100 ./bb-q100
+vagrant scp :~/bufferbloat/reno-buffer-q20.png ./reno-buffer-q20.png
+vagrant scp :~/bufferbloat/reno-buffer-q100.png ./reno-buffer-q100.png
+vagrant scp :~/bufferbloat/reno-rtt-q20.png ./reno-rtt-q20.png
+vagrant scp :~/bufferbloat/reno-rtt-q100.png ./reno-rtt-q100.png
+```

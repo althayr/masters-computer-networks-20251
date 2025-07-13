@@ -60,8 +60,15 @@ args = parser.parse_args()
 
 class BBTopo(Topo):
     "Simple topology for bufferbloat experiment."
+    
+    def __init__(self, bw_host, bw_net, delay, maxq, *args, **kwargs):
+        self.bw_host = bw_host
+        self.bw_net = bw_net
+        self.delay = delay
+        self.maxq = maxq
+        super().__init__(*args, **kwargs)
 
-    def build(self, n=2):
+    def build(self):
         # TODO: create two hosts
         h1 = self.addHost('h1')
         h2 = self.addHost('h2')
@@ -71,8 +78,8 @@ class BBTopo(Topo):
         switch = self.addSwitch('s0')
 
         # TODO: Add links with appropriate characteristics
-        self.addLink(h1, switch)
-        self.addLink(h2, switch)
+        self.addLink(h1, switch, cls=TCLink, bw=self.bw_host, delay=f'{self.delay}ms')
+        self.addLink(switch, h2, cls=TCLink, bw=self.bw_net, delay=f'{self.delay}ms', max_queue_size=self.maxq)
 
 # Simple wrappers around monitoring utilities.  You are welcome to
 # contribute neatly written (using classes) monitoring scripts for
@@ -92,14 +99,16 @@ def start_iperf(net):
     h2_ip = '10.0.0.2'
     transmission_duration = 300
     client = h1.popen('iperf -c {} -t {}'.format(h2_ip, transmission_duration))
+    return client, server
 
 def start_qmon(iface, interval_sec=0.1, outfile="q.txt"):
+    print("Starting queue monitoring")
     monitor = Process(target=monitor_qlen,
                       args=(iface, interval_sec, outfile))
     monitor.start()
     return monitor
 
-def start_ping(net):
+def start_ping(net, dir):
     # TODO: Start a ping train from h1 to h2 (or h2 to h1, does it
     # matter?)  Measure RTTs every 0.1 second.  Read the ping man page
     # to see how to do this.
@@ -109,21 +118,26 @@ def start_ping(net):
     # i.e. ping ... > /path/to/ping.
     h1 = net.get('h1')
     h2_ip = '10.0.0.2'
-    h1.popen('ping -i 0.1 {} > ./ping.txt'.format(h2_ip),
+    h1.popen('ping -i 0.1 {} > {}/ping.txt'.format(h2_ip, dir),
              shell=True)
-    pass
 
 def start_webserver(net):
+    print("Starting webserver")
     h1 = net.get('h1')
     proc = h1.popen("python webserver.py", shell=True)
     sleep(1)
     return [proc]
 
+def download_webpage(net):
+    h2 = net.get('h2')
+    result = h2.cmd('curl -o /dev/null -s -w %{time_total} http://10.0.0.1')
+    return float(result.strip())
+
 def bufferbloat():
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
     os.system("sysctl -w net.ipv4.tcp_congestion_control=%s" % args.cong)
-    topo = BBTopo()
+    topo = BBTopo(args.bw_host, args.bw_net, args.delay, args.maxq)
     net = Mininet(topo=topo, host=CPULimitedHost, link=TCLink)
     net.start()
     # This dumps the topology and how nodes are interconnected through
@@ -142,6 +156,9 @@ def bufferbloat():
 
     # TODO: Start iperf, webservers, etc.
     start_iperf(net)
+    start_webserver(net)
+    start_ping(net, args.dir)
+    
 
     # TODO: measure the time it takes to complete webpage transfer
     # from h1 to h2 (say) 3 times.  Hint: check what the following
@@ -153,9 +170,17 @@ def bufferbloat():
 
     # Hint: have a separate function to do this and you may find the
     # loop below useful.
+    fetch_times = []
     start_time = time()
     while True:
         # do the measurement (say) 3 times.
+        try:
+            fetch_time = download_webpage(net)
+            fetch_times.append(fetch_time)
+            print(f"Webpage fetch time: {fetch_time:.3f}s")
+        except:
+            print("Failed to fetch webpage")
+        
         sleep(5)
         now = time()
         delta = now - start_time
@@ -165,6 +190,16 @@ def bufferbloat():
 
     # TODO: compute average (and standard deviation) of the fetch
     # times.  You don't need to plot them.  Just note it in your
+    if fetch_times:
+        avg_time = sum(fetch_times) / len(fetch_times)
+        if len(fetch_times) > 1:
+            variance = sum((t - avg_time) ** 2 for t in fetch_times) / (len(fetch_times) - 1)
+            std_dev = variance ** 0.5
+        else:
+            std_dev = 0
+        print(f"Webpage fetch statistics: avg={avg_time:.3f}s, std={std_dev:.3f}s, samples={len(fetch_times)}")
+    else:
+        print("No successful webpage fetches")
     # README and explain.
 
     # Hint: The command below invokes a CLI which you can use to
