@@ -30,15 +30,28 @@ Running the experiments
 
 Logout from the ssh connection and copy the logged files to host machine
 
-- `vagrant scp ../bufferbloat :/home/vagrant/bufferbloat`
+- `vagrant scp ../bufferbloat :/home/vagrant`
 
 TCP Reno experiments
 
 ```bash
-vagrant scp :~/bufferbloat/bb-q20 ./bb-q20
-vagrant scp :~/bufferbloat/bb-q100 ./bb-q100
+rm -rf bb-q20-reno bb-q100-reno && \
+vagrant scp :~/bufferbloat/bb-q20 ./bb-q20-reno
+vagrant scp :~/bufferbloat/bb-q100 ./bb-q100-reno
 vagrant scp :~/bufferbloat/reno-buffer-q20.png ./reno-buffer-q20.png
 vagrant scp :~/bufferbloat/reno-buffer-q100.png ./reno-buffer-q100.png
 vagrant scp :~/bufferbloat/reno-rtt-q20.png ./reno-rtt-q20.png
 vagrant scp :~/bufferbloat/reno-rtt-q100.png ./reno-rtt-q100.png
+```
+
+TCP BBR experiments
+
+```bash
+rm -rf bb-q20-bbr bb-q100-bbr && \
+vagrant scp :~/bufferbloat/bb-q20 ./bb-q20-bbr
+vagrant scp :~/bufferbloat/bb-q100 ./bb-q100-bbr
+vagrant scp :~/bufferbloat/bbr-buffer-q20.png ./bbr-buffer-q20.png
+vagrant scp :~/bufferbloat/bbr-buffer-q100.png ./bbr-buffer-q100.png
+vagrant scp :~/bufferbloat/bbr-rtt-q20.png ./bbr-rtt-q20.png
+vagrant scp :~/bufferbloat/bbr-rtt-q100.png ./bbr-rtt-q100.png
 ```

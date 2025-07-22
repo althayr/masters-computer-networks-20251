@@ -30,7 +30,7 @@ parser.add_argument('--bw-net', '-b',
 
 parser.add_argument('--delay',
                     type=float,
-                    help="Link propagation delay (ms)",
+                    help="Link propagation delay (s)",
                     required=True)
 
 parser.add_argument('--dir', '-d',
@@ -99,6 +99,7 @@ def start_iperf(net):
     h2_ip = '10.0.0.2'
     transmission_duration = 300
     client = h1.popen('iperf -c {} -t {}'.format(h2_ip, transmission_duration))
+    print("Iperf connection initialized")
     return client, server
 
 def start_qmon(iface, interval_sec=0.1, outfile="q.txt"):
@@ -116,10 +117,12 @@ def start_ping(net, dir):
     # Hint: Use host.popen(cmd, shell=True).  If you pass shell=True
     # to popen, you can redirect cmd's output using shell syntax.
     # i.e. ping ... > /path/to/ping.
+    print("Starting ping train from h1 to h2")
     h1 = net.get('h1')
     h2_ip = '10.0.0.2'
     h1.popen('ping -i 0.1 {} > {}/ping.txt'.format(h2_ip, dir),
              shell=True)
+    print("Finished ping train from h1 to h2")
 
 def start_webserver(net):
     print("Starting webserver")
@@ -130,12 +133,14 @@ def start_webserver(net):
 
 def download_webpage(net):
     h2 = net.get('h2')
+    print("Downloading webpage...")
     result = h2.cmd('curl -o /dev/null -s -w %{time_total} http://10.0.0.1')
     return float(result.strip())
 
 def bufferbloat():
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
+    print("Initializing mininet topology")
     os.system("sysctl -w net.ipv4.tcp_congestion_control=%s" % args.cong)
     topo = BBTopo(args.bw_host, args.bw_net, args.delay, args.maxq)
     net = Mininet(topo=topo, host=CPULimitedHost, link=TCLink)
@@ -156,8 +161,8 @@ def bufferbloat():
 
     # TODO: Start iperf, webservers, etc.
     start_iperf(net)
-    start_webserver(net)
     start_ping(net, args.dir)
+    start_webserver(net)
     
 
     # TODO: measure the time it takes to complete webpage transfer

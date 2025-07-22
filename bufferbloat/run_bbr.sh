@@ -11,7 +11,7 @@ bwnet=1.5
 # link be?  Set this value correctly.
 # RTT = 2 x transmission delay => transmission delay = 10ms
 delay=0.01
-cong='reno'
+cong='bbr'
 dir=./
 
 iperf_port=5001
@@ -37,4 +37,5 @@ for qsize in 20 100; do
     echo "plotting queue and ping logs"
     python3 plot_queue.py -f $dir/q.txt -o $cong-buffer-q$qsize.png
     python3 plot_ping.py -f $dir/ping.txt -o $cong-rtt-q$qsize.png
+    mn -c
 done
